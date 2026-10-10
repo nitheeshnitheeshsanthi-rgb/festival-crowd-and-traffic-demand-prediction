@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "FestivalPassengerTimepointData",
+  "description": "Schema for historical and simulated 15-minute interval passenger counts at festival bus stops",
+  "type": "object",
+  "required": [
+    "timestamp",
+    "stop_id",
+    "stop_name",
+    "minutes_since_event_end",
+    "attendance_tier",
+    "rain_prob",
+    "temp_celsius",
+    "scheduled_buses",
+    "passenger_arrivals",
+    "boarding_queue",
+    "is_simulated"
+  ],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp for the 15-minute bucket"
+    },
+    "stop_id": {
+      "type": "string",
+      "enum": ["stop_a", "stop_b", "stop_c"],
+      "description": "Unique identifier for transit stop (stop_a: Main Terminal, stop_b: East Bypass, stop_c: West Rail Gate)"
+    },
+    "stop_name": {
+      "type": "string",
+      "description": "Human readable name of the bus terminal"
+    },
+    "distance_from_temple_km": {
+      "type": "number",
+      "description": "Walking distance from the sanctum/main event gate in km"
+    },
+    "minutes_since_event_end": {
+      "type": "integer",
+      "description": "Relative minutes elapsed since the final festival event ended (can be negative before ending)"
+    },
+    "attendance_tier": {
+      "type": "integer",
+      "description": "Total expected evening departing crowd size (e.g. 40000)"
+    },
+    "rain_prob": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Probability of rainfall (0.0 to 1.0)"
+    },
+    "temp_celsius": {
+      "type": "number",
+      "description": "Ambient temperature in Celsius"
+    },
+    "scheduled_buses": {
+      "type": "integer",
+      "description": "Number of scheduled buses allocated at this stop in the baseline roster"
+    },
+    "passenger_arrivals": {
+      "type": "integer",
+      "description": "Observed or simulated passenger arrivals during this 15-minute window"
+    },
+    "boarding_queue": {
+      "type": "integer",
+      "description": "Accumulated waiting crowd on platform"
+    },
+    "is_simulated": {
+      "type": "boolean",
+      "description": "Flag indicating synthetic calibration vs live telemetry"
+    }
+  }
+}
