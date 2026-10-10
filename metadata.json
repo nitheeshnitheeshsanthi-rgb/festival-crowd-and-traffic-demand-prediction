@@ -1,0 +1,6 @@
+{
+  "name": "FestivalFlow AI – Advance Crowd Prediction & Smart Bus Planning",
+  "description": "7-day advance crowd demand forecasting, risk detection, proactive bus redeployment allocation, and Gemini planning assistant for festival closing nights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
