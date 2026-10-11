@@ -66,12 +66,38 @@ export interface CrowdRiskAssessment {
   description: string;
 }
 
+export interface ServiceLossTradeoff {
+  donorRouteName: string;
+  donorStopId: string;
+  donorStopName: string;
+  recipientStopName: string;
+  recipientRouteName: string;
+  busesBefore: number;
+  busesAfter: number;
+  busesLost: number;
+  headwayBeforeMinutes: number;
+  headwayAfterMinutes: number;
+  headwayIncreaseMinutes: number;
+  capacityBeforePaxPerHour: number;
+  capacityAfterPaxPerHour: number;
+  capacityLostPaxPerHour: number;
+  peakDemandPaxPerHour: number;
+  utilizationBeforePct: number;
+  utilizationAfterPct: number;
+  affectedPassengersEstimate: number;
+  serviceImpactTier: 'Acceptable Trade-off' | 'Moderate Degradation' | 'Severe Cut';
+  tradeoffSummary: string;
+  mitigationMeasures: string[];
+}
+
 export interface BusTransferRecommendation {
   transferId: string;
   fromStopId: string;
   fromStopName: string;
+  fromRouteName: string;
   toStopId: string;
   toStopName: string;
+  toRouteName: string;
   busesCount: number;
   distanceKm: number;
   transitMinutes: number;
@@ -85,10 +111,12 @@ export interface BusTransferRecommendation {
     arrivesBeforeSurge: boolean;
     transitRoute: string;
   };
+  serviceLossTradeoff: ServiceLossTradeoff;
 }
 
 export interface AllocationPlan {
   summary: {
+    totalFleetSize: number;
     totalScheduledBuses: number;
     totalBusesRequired: number;
     totalTransfersRecommended: number;
@@ -96,15 +124,24 @@ export interface AllocationPlan {
     netShortfallAfterTransfers: number;
     clearedPassengersBonus: number;
     transitLeadTimeMinutes: number;
+    isFleetFixed: boolean;
+    netFleetDelta: number;
   };
   stops: {
     stopId: string;
     stopName: string;
+    routeName: string;
     scheduledBuses: number;
+    busesAfterRedeployment: number;
+    busDelta: number;
     busesRequired: number;
     netDeficit: number;
     surplusAvailable: number;
+    headwayBeforeMin: number;
+    headwayAfterMin: number;
     capacityUtilizationPct: number;
+    capacityUtilizationAfterPct: number;
+    serviceStatus: 'Surge Recipient' | 'Donor (Service Reduced)' | 'Baseline Maintained';
     isCritical: boolean;
   }[];
   transfers: BusTransferRecommendation[];
@@ -124,6 +161,7 @@ export interface GeminiBriefing {
   title: string;
   executiveSummary: string;
   whyStopAtRisk: string;
+  serviceTradeOffSummary?: string;
   transportOfficialsChecklist: string[];
   sensitivityImpact: string;
   isAiGenerated: boolean;
@@ -192,5 +230,49 @@ export interface PeakPredictionResponse {
       HIGH: string;
     };
   };
+}
+
+export interface SectorCrowdDensity {
+  name: string;
+  count: number;
+  density_sqm: number;
+}
+
+export interface DetectionBox {
+  id: number;
+  bbox: [number, number, number, number]; // [x, y, w, h]
+  bbox_norm?: [number, number, number, number];
+  confidence: number;
+  label: string;
+  sector?: string;
+}
+
+export interface LiveCameraObservation {
+  stopId: string;
+  stopName: string;
+  sourceType: 'webcam' | 'cctv' | 'manual';
+  streamName: string;
+  streamUrl?: string;
+  isConnected: boolean;
+  peopleCount: number;
+  confidence: number;
+  densityLabel: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  inflowRate: number;
+  outflowRate: number;
+  totalEntries: number;
+  totalExits: number;
+  sectors: {
+    sector_north_gate: SectorCrowdDensity;
+    sector_east_concourse: SectorCrowdDensity;
+    sector_central_plaza: SectorCrowdDensity;
+    sector_bus_bay: SectorCrowdDensity;
+  };
+  detections: DetectionBox[];
+  timestamp: string;
+  modelUsed: string;
+  isSensorDerived: boolean;
+  disclaimer: string;
+  processingTimeMs?: number;
 }
 

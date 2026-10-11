@@ -128,6 +128,14 @@ export const WhatIfSimulator: React.FC<WhatIfSimulatorProps> = ({
 
         {/* Sliders */}
         <div className="space-y-4 text-xs">
+          {/* Fixed fleet size badge */}
+          <div className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+            <span className="text-slate-300 font-semibold">Total Baseline Fleet Across All Stops:</span>
+            <span className="font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+              {stops.reduce((acc, s) => acc + s.scheduledBuses, 0)} Buses (Fixed Pool)
+            </span>
+          </div>
+
           {/* Attendance */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">

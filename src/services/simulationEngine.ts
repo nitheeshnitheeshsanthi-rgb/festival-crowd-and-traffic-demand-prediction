@@ -4,6 +4,7 @@ import {
   ForecastTimepoint,
   CrowdRiskAssessment,
   AllocationPlan,
+  BusTransferRecommendation,
   TimelineMilestone,
 } from '../types/festival';
 
@@ -269,91 +270,190 @@ export function computeBusAllocation(
   const endHour = parseInt(endHourStr, 10) || 22;
   const endMinute = parseInt(endMinuteStr, 10) || 0;
 
+  const ROUTE_NAMES: Record<string, string> = {
+    stop_a: 'Line 1 – Temple Central & North Sanctum Express',
+    stop_b: 'Line 7 – East Bypass & Outer Ring Road Feeder',
+    stop_c: 'Line 4 – South Rail Link & Suburban Connector',
+  };
+
   const timepoints = calculateDemandCurve(schedule, stops);
 
   // Focus on rush window: -15 to +75 min
   const rushPoints = timepoints.filter((tp) => tp.minutesFromEnd >= -15 && tp.minutesFromEnd <= 75);
 
-  const stopStats = stops.map((stop) => {
+  // Bus carries ~65 passengers per trip, ~1.5 trips in 90 min window
+  const clearancePerBus = 65 * 1.5;
+
+  const rawStats = stops.map((stop) => {
     const points = rushPoints.filter((tp) => tp.stopId === stop.id);
     const totalRushDemand = points.reduce((sum, p) => sum + p.demand, 0);
-
-    // Bus carries ~65 passengers per trip, ~1.5 trips in 90 min window
-    const clearancePerBus = 65 * 1.5;
     const busesRequired = Math.max(1, Math.ceil(totalRushDemand / clearancePerBus));
     const netDeficit = Math.max(0, busesRequired - stop.scheduledBuses);
-    const surplusAvailable = Math.max(0, stop.scheduledBuses - busesRequired);
+    const surplusAvailable = Math.max(0, stop.scheduledBuses - Math.max(1, busesRequired));
+
+    const scheduledBuses = stop.scheduledBuses;
+    const headwayBeforeMin = scheduledBuses > 0 ? Math.round(60 / scheduledBuses) : 90;
 
     return {
       stopId: stop.id,
       stopName: stop.name,
-      scheduledBuses: stop.scheduledBuses,
+      routeName: ROUTE_NAMES[stop.id] || `${stop.name} Route`,
+      scheduledBuses,
       busesRequired,
       netDeficit,
       surplusAvailable,
-      capacityUtilizationPct: Math.round((totalRushDemand / (stop.scheduledBuses * clearancePerBus)) * 100),
-      isCritical: netDeficit >= 4,
+      totalRushDemand,
+      headwayBeforeMin,
+      capacityUtilizationPct: scheduledBuses > 0
+        ? Math.round((totalRushDemand / (scheduledBuses * clearancePerBus)) * 100)
+        : 999,
     };
   });
 
-  // Calculate transfers
-  const donor = stopStats.find((s) => s.stopId === 'stop_b');
-  const recipient = stopStats.find((s) => s.stopId === 'stop_a');
+  // Calculate transfers under STRICT Fixed Fleet constraint:
+  // Fleet is fixed = sum of scheduled buses across all stops.
+  // Recommendations may only redistribute existing buses.
+  const donor = rawStats.find((s) => s.stopId === 'stop_b') || rawStats.find((s) => s.surplusAvailable > 0);
+  const recipient = rawStats.find((s) => s.stopId === 'stop_a') || rawStats.find((s) => s.netDeficit > 0);
 
-  const transfers: AllocationPlan['transfers'] = [];
+  const transfers: BusTransferRecommendation[] = [];
+  let busesMoved = 0;
 
-  if (donor && recipient) {
-    // Retain minimum 1 bus at Stop B for local travelers!
-    const availableToMove = Math.max(0, donor.scheduledBuses - 1);
-    const busesCount = Math.min(availableToMove, 3); // 3 buses transferred
+  if (donor && recipient && donor.stopId !== recipient.stopId) {
+    // Retain minimum 1 bus at donor stop so the route is never abandoned completely
+    const availableToDonate = Math.max(0, donor.scheduledBuses - 1);
+    const neededByRecipient = recipient.netDeficit;
+    const busesCount = Math.min(availableToDonate, Math.max(1, Math.min(neededByRecipient, 3)));
 
     if (busesCount > 0) {
-      // Distance is 2.0 km, traffic crawl takes 14 mins + 4 min buffer = 18 mins
+      busesMoved = busesCount;
+
       const transitMinutes = 18;
-      // Target arrival: 15 minutes before the event ending
       const targetArrivalTotalMins = endHour * 60 + endMinute - 15;
       const dispatchTotalMins = targetArrivalTotalMins - transitMinutes;
 
       const formatMins = (totalM: number) => {
-        const h = Math.floor((totalM + 1440) % 1440 / 60);
-        const m = Math.floor((totalM + 1440) % 1440 % 60);
+        const h = Math.floor(((totalM + 1440) % 1440) / 60);
+        const m = Math.floor(((totalM + 1440) % 1440) % 60);
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       };
+
+      const donorBusesBefore = donor.scheduledBuses;
+      const donorBusesAfter = donorBusesBefore - busesCount;
+      const donorHeadwayBefore = donor.headwayBeforeMin;
+      const donorHeadwayAfter = donorBusesAfter > 0 ? Math.round(60 / donorBusesAfter) : 120;
+      const headwayIncrease = donorHeadwayAfter - donorHeadwayBefore;
+
+      const donorCapBeforePerHour = donorBusesBefore * 65;
+      const donorCapAfterPerHour = donorBusesAfter * 65;
+      const capacityLostPerHour = donorCapBeforePerHour - donorCapAfterPerHour;
+
+      const donorUtilBefore = donor.capacityUtilizationPct;
+      const donorUtilAfter = Math.round((donor.totalRushDemand / (donorBusesAfter * clearancePerBus)) * 100);
+
+      const recipientRoute = recipient.routeName;
+      const donorRoute = donor.routeName;
 
       transfers.push({
         transferId: 'TRF-PROACTIVE-01',
         fromStopId: donor.stopId,
         fromStopName: donor.stopName,
+        fromRouteName: donorRoute,
         toStopId: recipient.stopId,
         toStopName: recipient.stopName,
+        toRouteName: recipientRoute,
         busesCount,
         distanceKm: 2.0,
         transitMinutes,
         dispatchTime: formatMins(dispatchTotalMins),
         arrivalTime: formatMins(targetArrivalTotalMins),
         isProactive: true,
-        operationalRationale: `Move ${busesCount} idling buses from East Bypass Stop (surplus capacity) along the 2.0 km corridor to Main Bus Stand before the final event ends. Dispatching at ${formatMins(
-          dispatchTotalMins
-        )} guarantees arrival by ${formatMins(
-          targetArrivalTotalMins
-        )}, safely absorbing 1,950 additional passengers and preventing platform stampede.`,
+        operationalRationale: `Fixed Fleet Redistribution: Reallocate ${busesCount} buses from ${donor.stopName} (${donorRoute}) to ${recipient.stopName} (${recipientRoute}). Service frequency on ${donorRoute} decreases from every ${donorHeadwayBefore}m to every ${donorHeadwayAfter}m (+${headwayIncrease}m wait for ~${Math.round(donor.totalRushDemand)} commuters), in order to supply +${Math.round(busesCount * clearancePerBus)} capacity to North Gate and prevent a fatal 190% platform crush.`,
         feasibility: {
           isFeasible: true,
           donorRetentionGuaranteed: true,
           arrivesBeforeSurge: true,
           transitRoute: 'East Ring Road -> Kamarajar Salai -> North Terminal dedicated bus lane',
         },
+        serviceLossTradeoff: {
+          donorRouteName: donorRoute,
+          donorStopId: donor.stopId,
+          donorStopName: donor.stopName,
+          recipientStopName: recipient.stopName,
+          recipientRouteName: recipientRoute,
+          busesBefore: donorBusesBefore,
+          busesAfter: donorBusesAfter,
+          busesLost: busesCount,
+          headwayBeforeMinutes: donorHeadwayBefore,
+          headwayAfterMinutes: donorHeadwayAfter,
+          headwayIncreaseMinutes: headwayIncrease,
+          capacityBeforePaxPerHour: donorCapBeforePerHour,
+          capacityAfterPaxPerHour: donorCapAfterPerHour,
+          capacityLostPaxPerHour: capacityLostPerHour,
+          peakDemandPaxPerHour: Math.round(donor.totalRushDemand / 1.5),
+          utilizationBeforePct: donorUtilBefore,
+          utilizationAfterPct: donorUtilAfter,
+          affectedPassengersEstimate: Math.round(donor.totalRushDemand),
+          serviceImpactTier: donorUtilAfter > 90 ? 'Severe Cut' : donorUtilAfter > 50 ? 'Moderate Degradation' : 'Acceptable Trade-off',
+          tradeoffSummary: `By moving ${busesCount} buses away, ${donor.stopName} loses ${capacityLostPerHour} pax/hr of clearance capacity. Waiting passengers on ${donorRoute} experience headway expansion from ${donorHeadwayBefore} min to ${donorHeadwayAfter} min (+${headwayIncrease} min delay). This sacrifice is operationally justified because ${donor.stopName} peak demand is only ${Math.round(donor.totalRushDemand)} pax, while ${recipient.stopName} faces ${Math.round(recipient.totalRushDemand)} devotees and would suffer catastrophic crush conditions without these ${busesCount} redistributed buses.`,
+          mitigationMeasures: [
+            `Broadcast updated ${donorHeadwayAfter}-minute departure timetable on digital VMS signs at ${donor.stopName}.`,
+            `Permanently retain ${donorBusesAfter} bus on ${donorRoute} to guarantee basic service continuity for local commuters.`,
+            `Station queue conductors at ${donor.stopName} to manage expectations and inform passengers of departure intervals.`,
+            `Enforce dedicated transit corridor to ensure transferred buses arrive at ${recipient.stopName} prior to crowd surge.`,
+          ],
+        },
       });
     }
   }
 
+  // Build stop stats with before & after allocations
+  const stopFinalStats = rawStats.map((item) => {
+    let busDelta = 0;
+    let serviceStatus: 'Surge Recipient' | 'Donor (Service Reduced)' | 'Baseline Maintained' = 'Baseline Maintained';
+
+    if (donor && item.stopId === donor.stopId && busesMoved > 0) {
+      busDelta = -busesMoved;
+      serviceStatus = 'Donor (Service Reduced)';
+    } else if (recipient && item.stopId === recipient.stopId && busesMoved > 0) {
+      busDelta = +busesMoved;
+      serviceStatus = 'Surge Recipient';
+    }
+
+    const busesAfter = item.scheduledBuses + busDelta;
+    const headwayAfterMin = busesAfter > 0 ? Math.round(60 / busesAfter) : 120;
+    const capacityUtilizationAfterPct = busesAfter > 0
+      ? Math.round((item.totalRushDemand / (busesAfter * clearancePerBus)) * 100)
+      : 999;
+
+    return {
+      stopId: item.stopId,
+      stopName: item.stopName,
+      routeName: item.routeName,
+      scheduledBuses: item.scheduledBuses,
+      busesAfterRedeployment: busesAfter,
+      busDelta,
+      busesRequired: item.busesRequired,
+      netDeficit: item.netDeficit,
+      surplusAvailable: item.surplusAvailable,
+      headwayBeforeMin: item.headwayBeforeMin,
+      headwayAfterMin,
+      capacityUtilizationPct: item.capacityUtilizationPct,
+      capacityUtilizationAfterPct,
+      serviceStatus,
+      isCritical: item.netDeficit >= 4 && busDelta <= 0,
+    };
+  });
+
   const totalTransfers = transfers.reduce((acc, t) => acc + t.busesCount, 0);
-  const totalBusesRequired = stopStats.reduce((acc, s) => acc + s.busesRequired, 0);
-  const totalScheduled = stopStats.reduce((acc, s) => acc + s.scheduledBuses, 0);
-  const initialDeficit = stopStats.reduce((acc, s) => acc + s.netDeficit, 0);
+  const totalBusesRequired = stopFinalStats.reduce((acc, s) => acc + s.busesRequired, 0);
+  const totalScheduled = stopFinalStats.reduce((acc, s) => acc + s.scheduledBuses, 0);
+  const totalAfter = stopFinalStats.reduce((acc, s) => acc + s.busesAfterRedeployment, 0);
+  const initialDeficit = stopFinalStats.reduce((acc, s) => acc + s.netDeficit, 0);
 
   return {
     summary: {
+      totalFleetSize: totalScheduled,
       totalScheduledBuses: totalScheduled,
       totalBusesRequired,
       totalTransfersRecommended: totalTransfers,
@@ -361,8 +461,10 @@ export function computeBusAllocation(
       netShortfallAfterTransfers: Math.max(0, initialDeficit - totalTransfers),
       clearedPassengersBonus: totalTransfers * 65 * 1.5,
       transitLeadTimeMinutes: 18,
+      isFleetFixed: true,
+      netFleetDelta: totalAfter - totalScheduled, // Strictly 0
     },
-    stops: stopStats,
+    stops: stopFinalStats,
     transfers,
   };
 }

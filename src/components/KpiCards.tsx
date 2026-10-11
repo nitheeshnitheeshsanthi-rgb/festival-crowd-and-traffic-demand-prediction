@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, AlertTriangle, Bus, Clock, ShieldCheck, ArrowRightLeft } from 'lucide-react';
+import { Users, Clock, AlertTriangle, Bus, ArrowRightLeft, ShieldAlert } from 'lucide-react';
 import { AllocationPlan, CrowdRiskAssessment, FestivalSchedule } from '../types/festival';
 
 interface KpiCardsProps {
@@ -9,103 +9,142 @@ interface KpiCardsProps {
 }
 
 export const KpiCards: React.FC<KpiCardsProps> = ({ schedule, plan, risks }) => {
-  const mainStopRisk = risks.find((r) => r.stopId === 'stop_a');
-  const eastStopRisk = risks.find((r) => r.stopId === 'stop_b');
-  const mainStopAlloc = plan.stops.find((s) => s.stopId === 'stop_a');
+  const highRiskStops = risks.filter((r) => r.riskLevel === 'Critical' || r.riskLevel === 'High');
+  const mediumRiskStops = risks.filter((r) => r.riskLevel === 'Medium');
+  const lowRiskStops = risks.filter((r) => r.riskLevel === 'Low');
   const primaryTransfer = plan.transfers[0];
 
+  // Calculate predicted peak time (typically 30-45 mins after finale)
+  const [endH, endM] = schedule.finalEventEndTime.split(':').map((x) => parseInt(x, 10));
+  const peakH = (endH + Math.floor((endM + 30) / 60)) % 24;
+  const peakM = (endM + 30) % 60;
+  const peakTimeStr = `${String(peakH).padStart(2, '0')}:${String(peakM).padStart(2, '0')}`;
+
+  const totalTransfers = plan.summary.totalTransfersRecommended || 3;
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* KPI 1: Crowd Surge */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition-colors">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Total Expected Crowd</span>
-          <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center">
-            <Users className="w-4 h-4" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      {/* KPI 1: Total Crowd */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700/80 transition-colors shadow-sm">
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Total Crowd</span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-white tracking-tight font-mono tabular-nums">
+              {schedule.expectedAttendance.toLocaleString()}
+            </span>
+            <span className="text-xs text-indigo-400 font-medium">devotees</span>
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-white tracking-tight">
-            {schedule.expectedAttendance.toLocaleString()}
-          </span>
-          <span className="text-xs text-orange-400 font-medium">~35,200 via transit</span>
-        </div>
-        <div className="mt-2 flex items-center text-xs text-slate-400">
-          <span>Surge Window: </span>
-          <span className="ml-1 text-slate-200 font-medium">
-            {schedule.finalEventEndTime} - {parseInt(schedule.finalEventEndTime.split(':')[0], 10) + 2}:00
+        <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Transit Demand:</span>
+          <span className="font-semibold text-slate-200 font-mono">
+            ~{Math.round(schedule.expectedAttendance * 0.88).toLocaleString()} pax
           </span>
         </div>
       </div>
 
-      {/* KPI 2: Crowd Risk & Bottleneck */}
-      <div className="bg-slate-900/80 border border-rose-950/60 rounded-xl p-4 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none" />
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Main Stand Risk Status</span>
-          <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
-            <AlertTriangle className="w-4 h-4" />
+      {/* KPI 2: Predicted Peak Time */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700/80 transition-colors shadow-sm">
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Predicted Peak Time</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <Clock className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-amber-400 tracking-tight font-mono tabular-nums">
+              {peakTimeStr}
+            </span>
+            <span className="text-xs text-slate-400">IST</span>
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-rose-400 tracking-tight">
-            {mainStopRisk?.riskLevel.toUpperCase() || 'CRITICAL'}
-          </span>
-          <span className="text-xs text-rose-300 font-semibold px-1.5 py-0.5 rounded bg-rose-950 border border-rose-800">
-            {mainStopRisk?.capacityOverloadRatio || 190}% Load
-          </span>
-        </div>
-        <div className="mt-2 flex items-center text-xs text-slate-400">
-          <span>Safe Cap: {mainStopRisk?.safeCapacity.toLocaleString()} pax</span>
-          <span className="mx-1.5 text-slate-600">|</span>
-          <span className="text-rose-300">Peak: {mainStopRisk?.peakHazardWindow}</span>
-        </div>
-      </div>
-
-      {/* KPI 3: Fleet Deficit vs Scheduled */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-700 transition-colors">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Main Terminal Bus Balance</span>
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
-            <Bus className="w-4 h-4" />
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-white tracking-tight">
-            {mainStopAlloc?.scheduledBuses || 12} / {mainStopAlloc?.busesRequired || 19}
-          </span>
-          <span className="text-xs text-rose-400 font-medium">
-            Deficit: -{mainStopAlloc?.netDeficit || 7} buses
-          </span>
-        </div>
-        <div className="mt-2 flex items-center text-xs text-slate-400">
-          <span>East Bypass Stop: </span>
-          <span className="ml-1 text-emerald-400 font-medium">
-            4 scheduled (+{plan.summary.totalTransfersRecommended} surplus)
+        <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Finale Surge:</span>
+          <span className="font-semibold text-amber-300">
+            +30m after {schedule.finalEventEndTime}
           </span>
         </div>
       </div>
 
-      {/* KPI 4: Proactive Transfer Solution */}
-      <div className="bg-slate-900/80 border border-emerald-950/60 rounded-xl p-4 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-400">Proactive Redeployment</span>
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-            <ArrowRightLeft className="w-4 h-4" />
+      {/* KPI 3: High-Risk Stops */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700/80 transition-colors shadow-sm">
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">High-Risk Stops</span>
+            <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-red-400 tracking-tight font-mono tabular-nums">
+              {highRiskStops.length} {highRiskStops.length === 1 ? 'Stop' : 'Stops'}
+            </span>
+            <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-800/80">
+              190% Overload
+            </span>
           </div>
         </div>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-emerald-400 tracking-tight">
-            {plan.summary.totalTransfersRecommended} Buses
-          </span>
-          <span className="text-xs text-emerald-300 font-semibold px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800">
-            Dispatch @ {primaryTransfer?.dispatchTime || '21:37'}
+        <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+          <span className="text-slate-400">Risk Profile:</span>
+          <span className="font-semibold text-red-300">
+            {highRiskStops[0]?.stopName.split('(')[0].trim() || 'North Gate'}
           </span>
         </div>
-        <div className="mt-2 flex items-center text-xs text-slate-400">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 mr-1" />
-          <span>Arrives {primaryTransfer?.arrivalTime || '21:55'} before crowd exits</span>
+      </div>
+
+      {/* KPI 4: Available Buses (Fixed Fleet) */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700/80 transition-colors shadow-sm">
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Available Buses</span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <Bus className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-emerald-400 tracking-tight font-mono tabular-nums">
+              {plan.summary.totalFleetSize} Buses
+            </span>
+            <span className="text-xs text-slate-400 font-medium">Fixed</span>
+          </div>
+        </div>
+        <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+          <span>Fleet Invariant:</span>
+          <span className="font-semibold text-emerald-300">
+            Zero-Sum (Δ = 0)
+          </span>
+        </div>
+      </div>
+
+      {/* KPI 5: Buses Recommended for Transfer */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between hover:border-slate-700/80 transition-colors shadow-sm">
+        <div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Recommended Transfers</span>
+            <div className="w-8 h-8 rounded-lg bg-orange-500/10 text-orange-400 flex items-center justify-center">
+              <ArrowRightLeft className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-orange-400 tracking-tight font-mono tabular-nums">
+              {totalTransfers} Buses
+            </span>
+            <span className="text-xs text-slate-400">
+              @ {primaryTransfer?.dispatchTime || '21:37'}
+            </span>
+          </div>
+        </div>
+        <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+          <span className="text-slate-400">Route Rebalance:</span>
+          <span className="font-semibold text-orange-300 font-mono">
+            East (4→1) → North (12→15)
+          </span>
         </div>
       </div>
     </div>

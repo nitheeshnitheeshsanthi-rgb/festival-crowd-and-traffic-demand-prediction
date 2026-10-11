@@ -275,10 +275,10 @@ export const PeakCrowdPredictor: React.FC<PeakCrowdPredictorProps> = ({
               </div>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-cyan-300 tracking-tight">
+              <span className="text-2xl font-bold text-cyan-300 tracking-tight font-mono tabular-nums">
                 {predictionData.peak_hour}
               </span>
-              <span className="text-xs text-slate-400 font-medium">
+              <span className="text-xs text-slate-400 font-medium font-mono tabular-nums">
                 (Finale @ {predictionData.parameters.final_event_end_time})
               </span>
             </div>
@@ -317,10 +317,10 @@ export const PeakCrowdPredictor: React.FC<PeakCrowdPredictorProps> = ({
               </div>
             </div>
             <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-white tracking-tight">
+              <span className="text-2xl font-bold text-white tracking-tight font-mono tabular-nums">
                 {predictionData.peak_demand.toLocaleString()}
               </span>
-              <span className="text-xs text-slate-400 font-medium">
+              <span className="text-xs text-slate-400 font-medium font-mono tabular-nums">
                 / {predictionData.peak_capacity.toLocaleString()} cap
               </span>
             </div>

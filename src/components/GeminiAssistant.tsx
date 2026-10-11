@@ -12,6 +12,7 @@ import {
   Sliders,
   FileText,
   BadgeCheck,
+  Scale,
 } from 'lucide-react';
 
 interface GeminiAssistantProps {
@@ -57,22 +58,22 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ schedule, plan
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-md bg-gradient-to-r from-orange-500 to-amber-500 flex items-center justify-center text-slate-950">
-                <Sparkles className="w-3.5 h-3.5" />
+              <div className="w-7 h-7 rounded-lg bg-orange-500/10 border border-orange-500/25 flex items-center justify-center text-orange-400">
+                <Sparkles className="w-4 h-4" />
               </div>
               <h3 className="text-base font-bold text-white">
-                Module 6: GenAI Strategic Operations Assistant (Gemini 3.8 Flash)
+                Tactical Operations Assistant & Gemini Strategy Briefing
               </h3>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Grounded synthesis translating mathematical demand forecasts into actionable police and transport directives
+              Grounded synthesis translating mathematical demand forecasts into actionable police and transit directives
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1.5">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
               <BadgeCheck className="w-3.5 h-3.5 text-emerald-400" />
-              Zero Hallucination Constraint: ON
+              Zero Hallucination Constraint Active
             </span>
 
             <button
@@ -115,6 +116,17 @@ export const GeminiAssistant: React.FC<GeminiAssistantProps> = ({ schedule, plan
               <h4 className="text-sm font-bold text-white mb-2">{briefing.title}</h4>
               <p className="text-xs text-slate-300 leading-relaxed">{briefing.executiveSummary}</p>
             </div>
+
+            {/* Service Trade-Off Callout */}
+            {briefing.serviceTradeOffSummary && (
+              <div className="bg-amber-950/20 border border-amber-900/50 rounded-xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs">
+                  <Scale className="w-4 h-4" />
+                  Route Service Trade-Off & Service Loss Audit
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">{briefing.serviceTradeOffSummary}</p>
+              </div>
+            )}
 
             {/* Why Main Stop Is At Risk */}
             <div className="bg-rose-950/20 border border-rose-900/50 rounded-xl p-4 space-y-2">

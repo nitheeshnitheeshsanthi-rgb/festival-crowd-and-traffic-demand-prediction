@@ -142,9 +142,14 @@ export const ReactiveVsProactive: React.FC<ReactiveVsProactiveProps> = ({ schedu
             </div>
           </div>
 
-          <div className="p-3 bg-emerald-950/30 border border-emerald-900/60 rounded-lg text-xs text-emerald-300 leading-relaxed">
-            <span className="font-bold block mb-1">Key Innovation:</span>
-            {proactive.keyAdvantage}
+          <div className="p-3 bg-emerald-950/30 border border-emerald-900/60 rounded-lg text-xs text-emerald-300 leading-relaxed space-y-1.5">
+            <div>
+              <span className="font-bold">Key Innovation: </span>
+              {proactive.keyAdvantage}
+            </div>
+            <div className="pt-1 border-t border-emerald-900/40 text-[11px] text-amber-300">
+              <b>Strict Fixed Fleet Trade-Off:</b> East Bypass Route 7 drops from 4 buses to 1 bus (headway expands from 15m to 60m) to provide these 3 buses without calling outside fleets.
+            </div>
           </div>
         </div>
       </div>

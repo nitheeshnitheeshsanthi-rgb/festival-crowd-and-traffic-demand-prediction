@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Tabular figures for data tables and metrics */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 /* Leaflet Map & Custom UI Styles */
 .leaflet-container {
   font-family: inherit;

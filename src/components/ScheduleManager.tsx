@@ -31,10 +31,10 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({ schedule, onUp
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <Calendar className="w-5 h-5 text-orange-400" />
-              Module 1: Festival Programme & Advance Schedule Manager
+              Festival Programme & Advance Schedule Manager
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Input published ceremony dates, expected attendee count, and final ritual closing time
+              Configure ceremony dates, expected attendee volume, and finale conclusion times
             </p>
           </div>
 

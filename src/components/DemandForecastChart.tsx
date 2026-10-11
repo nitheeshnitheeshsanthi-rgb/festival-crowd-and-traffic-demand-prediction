@@ -69,14 +69,14 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
   });
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col space-y-4">
+    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-sm flex flex-col justify-between space-y-4">
       {/* Header and Filter Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
         <div>
           <div className="flex items-center space-x-2">
             <TrendingUp className="w-4 h-4 text-orange-400" />
             <h3 className="text-sm font-semibold text-white">
-              15-Minute Passenger Demand Forecasting (Scikit-Learn Baseline)
+              15-Minute Passenger Demand Forecasting (ML Baseline)
             </h3>
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -127,7 +127,7 @@ export const DemandForecastChart: React.FC<DemandForecastChartProps> = ({
       </div>
 
       {/* Chart Canvas */}
-      <div className="w-full h-72 sm:h-80">
+      <div className="w-full h-[360px]">
         <ResponsiveContainer width="100%" height="100%">
           {viewMode === 'demandVsCapacity' ? (
             <AreaChart data={singleStopData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>

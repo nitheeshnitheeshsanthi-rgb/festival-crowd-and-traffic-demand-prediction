@@ -49,10 +49,10 @@ export const WeatherAndHistory: React.FC<WeatherAndHistoryProps> = ({ schedule, 
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <CloudRain className="w-5 h-5 text-blue-400" />
-              Module 2: Meteorological Forecast & Environmental Surge Calibration
+              Meteorological Forecast & Environmental Surge Calibration
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Weather dynamics directly govern egress velocity: precipitation accelerates crowd departure by 15-25 minutes
+              Weather dynamics govern egress velocity: precipitation accelerates crowd departure by 15-25 minutes
             </p>
           </div>
 
@@ -169,7 +169,7 @@ export const WeatherAndHistory: React.FC<WeatherAndHistoryProps> = ({ schedule, 
           </div>
 
           <span className="text-[11px] bg-slate-800 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700">
-            CSV Repository: <code className="text-orange-300">backend/data/historical_festival_data.csv</code>
+            CSV Repository: <code className="text-orange-300">data/historical_festival_data.csv</code>
           </span>
         </div>
 
