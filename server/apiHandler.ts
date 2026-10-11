@@ -40,8 +40,11 @@ function sendJson(res: ServerResponse, statusCode: number, data: any) {
 }
 
 export async function handleApiRoute(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
-  const url = req.url || '';
-  if (!url.startsWith('/api')) {
+  const rawUrl = (req as any).originalUrl || req.url || '';
+  const [cleanPath] = rawUrl.split('?');
+  const url = cleanPath.startsWith('/api') ? cleanPath : `/api${cleanPath}`;
+
+  if (!rawUrl.startsWith('/api') && !(req as any).originalUrl?.startsWith('/api')) {
     return false;
   }
 

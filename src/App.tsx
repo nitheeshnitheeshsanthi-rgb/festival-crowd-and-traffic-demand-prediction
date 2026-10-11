@@ -23,6 +23,7 @@ import { WhatIfSimulator } from './components/WhatIfSimulator';
 import { ExportModal } from './components/ExportModal';
 import { PeakCrowdPredictor } from './components/PeakCrowdPredictor';
 import { LiveMonitoring } from './components/LiveMonitoring';
+import { LiveCameraMonitoring } from './components/LiveCameraMonitoring';
 import { SystemTests } from './components/SystemTests';
 import { SettingsView } from './components/SettingsView';
 import {
@@ -216,6 +217,19 @@ export default function App() {
             </div>
           )}
 
+          {/* Section: Live Camera Monitoring (Real-time Computer Vision) */}
+          {activeTab === 'camera' && (
+            <div className="space-y-6">
+              <LiveCameraMonitoring
+                schedule={schedule}
+                stops={stops}
+                plan={plan}
+                onTriggerToast={addToast}
+                onNavigateTab={setActiveTab}
+              />
+            </div>
+          )}
+
           {/* Section 2: Crowd Prediction */}
           {activeTab === 'prediction' && (
             <div className="space-y-6">
@@ -307,6 +321,7 @@ export default function App() {
                 plan={plan}
                 risks={risks}
                 onTriggerToast={addToast}
+                onNavigateTab={setActiveTab}
               />
             </div>
           )}

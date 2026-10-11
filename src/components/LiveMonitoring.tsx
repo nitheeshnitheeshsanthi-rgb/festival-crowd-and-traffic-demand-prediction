@@ -16,6 +16,7 @@ import {
   Volume2,
   ChevronRight,
   Zap,
+  Camera,
 } from 'lucide-react';
 
 interface LiveMonitoringProps {
@@ -24,6 +25,7 @@ interface LiveMonitoringProps {
   plan: AllocationPlan;
   risks: CrowdRiskAssessment[];
   onTriggerToast?: (type: 'success' | 'warning' | 'error' | 'info', title: string, message?: string) => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 interface TelemetryEvent {
@@ -41,6 +43,7 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({
   plan,
   risks,
   onTriggerToast,
+  onNavigateTab,
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [currentTime, setCurrentTime] = useState<string>('21:35:00');
@@ -175,6 +178,16 @@ export const LiveMonitoring: React.FC<LiveMonitoringProps> = ({
 
         {/* Play / Pause / Reset Controls */}
         <div className="flex items-center gap-2 flex-wrap">
+          {onNavigateTab && (
+            <button
+              onClick={() => onNavigateTab('camera')}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm shadow-emerald-600/25"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              Live Camera Count Feed
+            </button>
+          )}
+
           <button
             onClick={() => setIsPlaying(!isPlaying)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
